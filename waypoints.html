@@ -1,0 +1,166 @@
+<!DOCTYPE html >
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <title>Using MySQL and PHP with Google Maps</title>
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+
+<html>
+  <body>
+    <script>
+//here we use custom/random co-ordinates data
+
+	var waypts1 = [18.4923462,	18.4925766,	18.4926671,	18.4926254,	18.4926256,
+				18.4926254,	18.4925401,	18.4904089,	18.490124,	18.4863311,
+				18.4846284,	18.4810347,	18.4812673,	18.4834441,	18.4834441,
+				18.4834787,	18.4880528]; 
+	var waypts2 = [73.8572893,  73.8534037,  73.8511083,  73.8502273,  73.8502274,
+				73.8502273,  73.8509542,  73.8498778,  73.8498326,  73.850152,
+				73.8497893,  73.8540207,  73.8569614,  73.8574599,  73.8574599,
+				73.8574754,  73.8539785];
+//push cordinates to the third array using this function
+
+	function storeCoordinate(x, y, array) {
+		array.push(x);
+		array.push(y);
+	}
+
+	var coords = [];
+	var waypts = [];
+	for (var i = 0; i < waypts1.length; i++) {
+		storeCoordinate(waypts1[i],waypts2[i], coords);
+	}
+
+// to loop through coordinate values
+		var len=coords.length;
+	for (var i = 0; i < coords.length; i+=2) {
+		waypts.push({
+             location: {lat:coords[i],lng:coords[i+1]},
+             stopover: true
+           });
+	}
+	
+	function init(){
+
+//please change this marker also for start and end location
+
+		var checkIn = {
+			url: "check_in.png", // url
+			scaledSize: new google.maps.Size(40, 40), // scaled size
+			origin: new google.maps.Point(0.50,0.50), // origin
+			anchor: new google.maps.Point(-0, 40) // anchor
+		};
+		
+		var checkOut = {
+			url: "check_out.png", // url
+			scaledSize: new google.maps.Size(50, 50), // scaled size
+			origin: new google.maps.Point(0.50,0.50), // origin
+			anchor: new google.maps.Point(35,60) // anchor
+		};
+		
+		directionsService = new google.maps.DirectionsService();
+		
+		var pos = new google.maps.LatLng(18.4896899, 73.8551833);
+		var myOptions = {
+			zoom: 12,
+			center: pos,
+			mapTypeId: google.maps.MapTypeId.ROADMAP
+		};
+
+
+
+    map = new google.maps.Map(document.getElementById('map'), myOptions);
+    directionsDisplay = new google.maps.DirectionsRenderer({
+		map: map, 
+		suppressMarkers: true});
+
+    directionsService.route({
+        origin: {lat: 18.4896899, lng: 73.8551833},
+          destination: {lat:18.4896824,lng:73.8551854},
+        waypoints: waypts, //other duration points
+        optimizeWaypoints: true,
+        travelMode: google.maps.TravelMode.WALKING
+    }, function(response, status) {
+        if (status === google.maps.DirectionsStatus.OK) {
+            directionsDisplay.setDirections(response);
+						
+			//console.log(response.routes[0].legs.length);
+			///console.log(response.routes[0]['legs']);
+			
+			var arr_len = response.routes[0].legs.length;
+			var data=[];
+			for(i=0;i<arr_len;i++){
+				var str = response.routes[0]['legs'][i]['distance']['text'].match(/[a-z]+|[^a-z]+/gi);
+				console.log(response.routes[0]['legs'][i]['distance']['text']);
+				if(str[1]=='km'){
+					data[i]=Number(str[0]);
+				}else if(str[1]=='m'){
+					var m = Number(str[0]);
+					data[i]=m/ 1000; 
+          //here you get distance between two waypoints.
+				}
+					
+				
+			}
+			var sum = data.reduce(function(pv, cv) { return pv + cv; }, 0);
+			console.log(sum.toFixed(2));
+			var my_route = response.routes[0];
+            var count = my_route.legs.length;
+			//console.log(count);
+			var marker = new google.maps.Marker({
+                position: my_route.legs[0].start_location,
+                map: map,
+				icon:checkIn
+            });
+			var marker = new google.maps.Marker({
+                position: my_route.legs[count-1].end_location,
+                 map: map,
+				icon:checkOut
+            });
+			
+			var y = new Array();
+			
+			for (var i = 0; i < my_route.legs.length; i++) {
+                
+				
+				var lb=(i+1); 
+				var marker = new google.maps.Marker({
+                    position: my_route.legs[lb].start_location,
+                    label:''+(lb),
+					map: map
+                });
+								
+			}
+			            			
+			marker.setMap(map);
+        } else {
+            vts.alertDialog( window.localization.error,
+                window.localization.error_direction_calculate + ": " + status,
+                BootstrapDialog.TYPE_DANGER);
+        }
+    });
+	
+
+}    
+    </script>
+<body style="margin:0px; padding:0px;" onload="init()">
+	 <div id="map"></div>
+</body>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=Add_API_Key&callback=initMap">
+    </script>
+  </body>
+</html>
